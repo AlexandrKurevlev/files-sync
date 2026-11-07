@@ -114,6 +114,41 @@ func CompareScans(source, dest map[string]string) (toCopy, toUpdate, toDelete []
 	return
 }
 
+func CopyFile(srcPath, destPath string) error {
+	src, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	err = os.MkdirAll(filepath.Dir(destPath), 0755)
+	if err != nil {
+		return err
+	}
+
+	dst, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteFile(path string) error {
+	err := os.Remove(path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 	sourcePath := os.Args[1]
 	destPath := os.Args[2]
@@ -131,16 +166,25 @@ func main() {
 	}
 
 	toCopy, toUpdate, toDelete := CompareScans(source, dest)
-	fmt.Println("Файлы для КОПИРОВАНИЯ:")
 	for _, file := range toCopy {
-		fmt.Println("-", file)
+		fmt.Println("Копирую", file)
+		err = CopyFile(filepath.Join(sourcePath, file), filepath.Join(destPath, file))
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
-	fmt.Println("Файлы для ОБНОВЛЕНИЯ:")
 	for _, file := range toUpdate {
-		fmt.Println("-", file)
+		fmt.Println("Обновляю", file)
+		err = CopyFile(filepath.Join(sourcePath, file), filepath.Join(destPath, file))
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
-	fmt.Println("Файлы для УДАЛЕНИЯ:")
 	for _, file := range toDelete {
-		fmt.Println("-", file)
+		fmt.Println("Удаляю", file)
+		err = DeleteFile(filepath.Join(destPath, file))
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
