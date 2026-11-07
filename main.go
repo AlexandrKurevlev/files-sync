@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 func ListFiles(rootPath string) ([]string, error) {
@@ -48,6 +49,13 @@ func HashFile(filePath string) (string, error) {
 	return hex.EncodeToString(result), nil
 }
 
+type FileHash struct {
+	Path string
+	Hash string
+}
+
+const numWorkers = 10
+
 func main() {
 	filepaths, err := ListFiles("./")
 	if err != nil {
@@ -55,11 +63,34 @@ func main() {
 		return
 	}
 
-	for _, filepath := range filepaths {
-		hash, err := HashFile(filepath)
-		if err != nil {
-			fmt.Println(err)
+	tasks := make(chan string)
+	results := make(chan FileHash)
+
+	var wg sync.WaitGroup
+	for range numWorkers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for path := range tasks {
+				hash, _ := HashFile(path)
+				results <- FileHash{Path: path, Hash: hash}
+			}
+		}()
+	}
+
+	go func() {
+		for _, path := range filepaths {
+			tasks <- path
 		}
-		fmt.Println(filepath, hash)
+		close(tasks)
+	}()
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for hash := range results {
+		fmt.Println(hash.Path, hash.Hash)
 	}
 }
