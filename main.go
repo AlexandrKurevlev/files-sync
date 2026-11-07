@@ -56,11 +56,10 @@ type FileHash struct {
 
 const numWorkers = 10
 
-func main() {
-	filepaths, err := ListFiles("./")
+func GetHashes(pathToProcess string) (map[string]string, error) {
+	filepaths, err := ListFiles(pathToProcess)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return nil, err
 	}
 
 	tasks := make(chan string)
@@ -72,7 +71,7 @@ func main() {
 		go func() {
 			defer wg.Done()
 			for path := range tasks {
-				hash, _ := HashFile(path)
+				hash, _ := HashFile(filepath.Join(pathToProcess, path))
 				results <- FileHash{Path: path, Hash: hash}
 			}
 		}()
@@ -90,7 +89,58 @@ func main() {
 		close(results)
 	}()
 
+	res := make(map[string]string)
 	for hash := range results {
-		fmt.Println(hash.Path, hash.Hash)
+		res[hash.Path] = hash.Hash
+	}
+	return res, nil
+}
+
+func CompareScans(source, dest map[string]string) (toCopy, toUpdate, toDelete []string) {
+	for srcKey, srcHash := range source {
+		if destHash, exists := dest[srcKey]; !exists {
+			toCopy = append(toCopy, srcKey)
+		} else if srcHash != destHash {
+			toUpdate = append(toUpdate, srcKey)
+		}
+	}
+
+	for destKey, _ := range dest {
+		if _, exists := source[destKey]; !exists {
+			toDelete = append(toDelete, destKey)
+		}
+	}
+
+	return
+}
+
+func main() {
+	sourcePath := os.Args[1]
+	destPath := os.Args[2]
+
+	source, err := GetHashes(sourcePath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	dest, err := GetHashes(destPath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	toCopy, toUpdate, toDelete := CompareScans(source, dest)
+	fmt.Println("Файлы для КОПИРОВАНИЯ:")
+	for _, file := range toCopy {
+		fmt.Println("-", file)
+	}
+	fmt.Println("Файлы для ОБНОВЛЕНИЯ:")
+	for _, file := range toUpdate {
+		fmt.Println("-", file)
+	}
+	fmt.Println("Файлы для УДАЛЕНИЯ:")
+	for _, file := range toDelete {
+		fmt.Println("-", file)
 	}
 }
