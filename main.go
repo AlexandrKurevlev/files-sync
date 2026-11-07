@@ -173,8 +173,7 @@ func main() {
 
 	toCopy, toUpdate, toDelete := CompareScans(source, dest)
 	fmt.Println("Синхронизация...")
-	bar := progressbar.New(len(toCopy) + len(toUpdate) + len(toDelete))
-	bar = progressbar.NewOptions64(int64(len(toCopy)+len(toUpdate)+len(toDelete)), progressbar.OptionSetMaxDetailRow(2))
+	bar := progressbar.NewOptions64(int64(len(toCopy)+len(toUpdate)+len(toDelete)), progressbar.OptionSetMaxDetailRow(2))
 	c := color.New(color.FgGreen)
 	for _, file := range toCopy {
 		err = CopyFile(filepath.Join(sourcePath, file), filepath.Join(destPath, file))
