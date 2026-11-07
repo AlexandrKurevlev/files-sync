@@ -71,7 +71,10 @@ func GetHashes(pathToProcess string) (map[string]string, error) {
 		go func() {
 			defer wg.Done()
 			for path := range tasks {
-				hash, _ := HashFile(filepath.Join(pathToProcess, path))
+				hash, err := HashFile(filepath.Join(pathToProcess, path))
+				if err != nil {
+					fmt.Println(err)
+				}
 				results <- FileHash{Path: path, Hash: hash}
 			}
 		}()
