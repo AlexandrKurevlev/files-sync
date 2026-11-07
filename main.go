@@ -9,6 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/fatih/color"
+	"github.com/schollz/progressbar/v3"
 )
 
 func ListFiles(rootPath string) ([]string, error) {
@@ -169,25 +172,36 @@ func main() {
 	}
 
 	toCopy, toUpdate, toDelete := CompareScans(source, dest)
+	fmt.Println("Синхронизация...")
+	bar := progressbar.NewOptions64(int64(len(toCopy)+len(toUpdate)+len(toDelete)), progressbar.OptionSetMaxDetailRow(2))
+	c := color.New(color.FgGreen)
 	for _, file := range toCopy {
-		fmt.Println("Копирую", file)
 		err = CopyFile(filepath.Join(sourcePath, file), filepath.Join(destPath, file))
+		bar.Add(1)
+		bar.AddDetail(c.Sprintf("[КОПИРОВАНИЕ] %s", file))
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
+	c = color.New(color.FgYellow)
 	for _, file := range toUpdate {
-		fmt.Println("Обновляю", file)
 		err = CopyFile(filepath.Join(sourcePath, file), filepath.Join(destPath, file))
+		bar.Add(1)
+		bar.AddDetail(c.Sprintf("[ОБНОВЛЕНИЕ] %s", file))
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
+	c = color.New(color.FgRed)
 	for _, file := range toDelete {
-		fmt.Println("Удаляю", file)
 		err = DeleteFile(filepath.Join(destPath, file))
+		bar.Add(1)
+		bar.AddDetail(c.Sprintf("[УДАЛЕНИЕ] %s", file))
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
+
+	fmt.Println()
+	fmt.Println("Синхронизация завершена!")
 }
