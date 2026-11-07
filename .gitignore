@@ -1,10 +1,20 @@
-# Скомпилированные бинарники
+# Бинарные файлы
+files-sync
 *.exe
 *.dll
+*.so
+*.dylib
 
-# Папки IDE
+# Временные файлы
+*.tmp
+*.log
+
+# Тестовые директории
+/test-data/
+/source/
+/dest/
+
+# IDE
 .idea/
 .vscode/
-
-# macOS
 .DS_Store
